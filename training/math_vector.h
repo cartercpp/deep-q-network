@@ -7,6 +7,7 @@
 
 #include <stdexcept>
 #include <format>
+#include <initializer_list>
 #include <vector>
 #include <algorithm>
 #include <concepts>
@@ -25,7 +26,7 @@ public:
         : m_data(size, value)
     {}
 
-    math_vector(const std::vector<ValueType>& data)
+    math_vector(std::initializer_list<ValueType> data)
         : m_data{data}
     {}
 

@@ -3,6 +3,7 @@
 //
 
 #include "neural_network.h"
+#include <initializer_list>
 #include <vector>
 #include <random>
 #include <utility>
@@ -80,15 +81,15 @@ void neural_network::fit(const math_vector<double>& input, const math_vector<dou
 }
 
 neural_network::neural_network(
-    const std::vector<matrix<double>>& weightMatrices,
-    const std::vector<math_vector<double>>& biasVectors,
-    const std::vector<std::size_t>& neuronsPerLayer,
+    std::initializer_list<matrix<double>> weightMatrices,
+    std::initializer_list<math_vector<double>> biasVectors,
+    std::initializer_list<std::size_t> neuronsPerLayer,
     double learningRate
 ) : m_weightMatrices{weightMatrices}, m_biasVectors{biasVectors}, m_neuronsPerLayer{neuronsPerLayer},
     m_learningRate{learningRate}
 {}
 
-neural_network::neural_network(const std::vector<std::size_t>& neuronsPerLayer, double learningRate)
+neural_network::neural_network(std::initializer_list<std::size_t> neuronsPerLayer, double learningRate)
     : m_neuronsPerLayer{neuronsPerLayer}, m_learningRate{learningRate}
 {
     const std::size_t layers = neuronsPerLayer.size();
@@ -100,8 +101,8 @@ neural_network::neural_network(const std::vector<std::size_t>& neuronsPerLayer, 
 
     for (std::size_t layer = 1; layer < layers; ++layer)
     {
-        const std::size_t prevLayerSize = neuronsPerLayer[layer - 1],
-                          layerSize = neuronsPerLayer[layer];
+        const std::size_t prevLayerSize = *(neuronsPerLayer.begin() + layer - 1),
+                          layerSize = *(neuronsPerLayer.begin() + layer);
 
         std::normal_distribution<double> dist(0, std::sqrt(1 / static_cast<double>(2 * prevLayerSize)));
 

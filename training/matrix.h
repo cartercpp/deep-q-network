@@ -6,6 +6,7 @@
 #define DEEPQNETWORK_MATRIX_H
 
 #include <stdexcept>
+#include <initializer_list>
 #include <vector>
 #include <algorithm>
 #include <concepts>
@@ -26,6 +27,14 @@ public:
     explicit matrix(std::size_t rows, std::size_t columns, ValueType value = 0)
         : m_data(rows, math_vector<ValueType>(columns, value)), m_rows{rows}, m_columns{columns}
     {}
+
+    matrix(std::initializer_list<math_vector<ValueType>> data)
+        : m_data{data}, m_rows{data.size()}, m_columns{(data.size() > 0) ? data.begin()->size() : 0}
+    {
+        for (const auto& row : data)
+            if (row.size() != m_columns)
+                throw std::invalid_argument{"Each row in a matrix must have the same # of columns"};
+    }
 
     // METHODS
 

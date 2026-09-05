@@ -5,6 +5,7 @@
 #ifndef DEEPQNETWORK_NEURAL_NETWORK_H
 #define DEEPQNETWORK_NEURAL_NETWORK_H
 
+#include <initializer_list>
 #include <vector>
 #include "math_vector.h"
 #include "matrix.h"
@@ -17,14 +18,14 @@ public:
     // CONSTRUCTORS
 
     explicit neural_network(
-        const std::vector<std::size_t>&,
+        std::initializer_list<std::size_t>,
         double
     );
 
     explicit neural_network(
-        const std::vector<matrix<double>>&,
-        const std::vector<math_vector<double>>&,
-        const std::vector<std::size_t>&,
+        std::initializer_list<matrix<double>>,
+        std::initializer_list<math_vector<double>>,
+        std::initializer_list<std::size_t>,
         double
     );
 

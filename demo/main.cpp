@@ -56,7 +56,7 @@ int main()
                 int agentRow = 0,
                     agentColumn = 0;
 
-                while (grid[agentRow][agentColumn] != CELL::END)
+                while (true)
                 {
                     std::cout << "\033[0H";
                     for (int row = 0; row < rows; ++row)
@@ -82,6 +82,12 @@ int main()
                     }
                     std::cout << std::format("\033[{};{}H", agentRow + 1, agentColumn + 1);
                     std::cout << "\033[38;2;0;255;255mo" << std::flush;
+
+                    if (grid[agentRow][agentColumn] == CELL::END)
+                    {
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
+                        break;
+                    }
 
                     const auto qValues = mazeNN.predict(encode(agentRow, agentColumn));
                     int actionIndex = 0;

@@ -79,7 +79,7 @@ int main()
     {
         int newRow = row,
             newColumn = column;
-        double reward = -0.1;
+        double reward = -0.01;
 
         switch (action)
         {
@@ -113,11 +113,14 @@ int main()
                 break;
         }
 
+        if (grid[newRow][newColumn] == CELL::END)
+            reward = 1;
+
         return std::tuple{newRow, newColumn, reward};
     };
 
     // essentials:
-    neural_network onlineNN({6, 32, 32, 32, 4}, 0.005),
+    neural_network onlineNN({6, 32, 32, 32, 4}, 0.001),
                    targetNN{onlineNN};
     constexpr double gamma = 0.99;
 
@@ -162,10 +165,7 @@ int main()
                     }
 
                     // perform action & store experience in replay buffer:
-                    auto [newRow, newColumn, reward] = takeAction(agentRow, agentColumn, action);
-
-                    if (grid[newRow][newColumn] == CELL::END)
-                        reward = 100;
+                    const auto [newRow, newColumn, reward] = takeAction(agentRow, agentColumn, action);
 
                     replayBuffer.emplace_back(
                         std::pair<int, int>{agentRow, agentColumn}, // state
@@ -182,32 +182,35 @@ int main()
                         replayBuffer.pop_front();
 
                     // train on replay buffer:
-                    const std::size_t samples = std::min<std::size_t>(replayBuffer.size(), 32);
-                    std::uniform_int_distribution<std::size_t> bufferIndexDist(0, replayBuffer.size() - 1);
-
-                    for (std::size_t iter = 0; iter < samples; ++iter)
+                    if (replayBuffer.size() >= 500)
                     {
-                        // get random experience:
-                        const auto& [state, action, reward, nextState, done] = replayBuffer[bufferIndexDist(rd)];
+                        constexpr std::size_t samples = 32;
+                        std::uniform_int_distribution<std::size_t> bufferIndexDist(0, replayBuffer.size() - 1);
 
-                        const auto [row, column] = state;
-                        const auto [nextRow, nextColumn] = nextState;
+                        for (std::size_t iter = 0; iter < samples; ++iter)
+                        {
+                            // get random experience:
+                            const auto& [state, action, reward, nextState, done] = replayBuffer[bufferIndexDist(rd)];
 
-                        // make predictions given these states:
-                        const math_vector<double> onlinePrediction{onlineNN.predict(encode(row, column))},
-                                                  targetPrediction{targetNN.predict(encode(nextRow, nextColumn))};
+                            const auto [row, column] = state;
+                            const auto [nextRow, nextColumn] = nextState;
 
-                        // (fit)
-                        double bestFutureValue = std::numeric_limits<double>::lowest();
-                        for (int i = 0; i < actions; ++i)
-                            if (targetPrediction[i] > bestFutureValue)
-                                bestFutureValue = targetPrediction[i];
+                            // make predictions given these states:
+                            const math_vector<double> onlinePrediction{onlineNN.predict(encode(row, column))},
+                                                      targetPrediction{targetNN.predict(encode(nextRow, nextColumn))};
 
-                        const double desiredQValue = !done ? (reward + gamma * bestFutureValue) : reward;
-                        math_vector<double> target{onlinePrediction};
-                        target[std::to_underlying(action)] = desiredQValue;
+                            // (fit)
+                            double bestFutureValue = std::numeric_limits<double>::lowest();
+                            for (int i = 0; i < actions; ++i)
+                                if (targetPrediction[i] > bestFutureValue)
+                                    bestFutureValue = targetPrediction[i];
 
-                        onlineNN.fit(encode(row, column), target);
+                            const double desiredQValue = !done ? (reward + gamma * bestFutureValue) : reward;
+                            math_vector<double> target{onlinePrediction};
+                            target[std::to_underlying(action)] = desiredQValue;
+
+                            onlineNN.fit(encode(row, column), target);
+                        }
                     }
 
                     if (frame % 500 == 0)
@@ -215,17 +218,16 @@ int main()
 
                     ++frame;
                     ++stepsTaken;
+                    epsilon = std::max(0.05, epsilon * 0.9999);
                 }
-
-                epsilon *= 0.995;
             }
         }};
         std::cin.get();
     }
 
     std::ofstream weightsFile{"/home/cartercpp/Documents/C++/DeepQNetwork/weights.txt"};
-    weightsFile << std::format("{}", targetNN.weights());
+    weightsFile << std::format("{}", onlineNN.weights());
 
     std::ofstream biasesFile{"/home/cartercpp/Documents/C++/DeepQNetwork/biases.txt"};
-    biasesFile << std::format("{}", targetNN.biases());
+    biasesFile << std::format("{}", onlineNN.biases());
 }
